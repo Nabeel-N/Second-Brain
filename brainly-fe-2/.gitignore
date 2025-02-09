@@ -1,3 +1,5 @@
+# Ignore environment variables file
+.env
 # Logs
 logs
 *.log
@@ -22,6 +24,3 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-
-echo ".env" >> .gitignore
-.env
