@@ -1,20 +1,23 @@
 import mongoose, { model, Schema, Types } from "mongoose";
 
-const uri =
-  "mongodb+srv://nabeel123:CMMG53HEnlUp2hs1@cluster0.ieqgqev.mongodb.net/Brainly";
+const MONGODB_URI = process.env.DATABASE_URL || "".trim();
 
-// Connect to MongoDB
-const mongooseconnect = mongoose.connect(uri);
-mongooseconnect
-  .then(() => console.log("Connected to MongoDB "))
-  .catch((err) => console.error("Error connecting to MongoDB:", err));
+const connectDB = async () => {
+  try {
+    await mongoose.connect(MONGODB_URI);
+    console.log("MongoDB connected successfully");
+  } catch (error) {
+    console.error("MongoDB connection failed:", error);
+    process.exit(1);
+  }
+};
 // Schema for the Signin & Signup
 
 const UserSchema = new Schema({
   username: { type: String, unique: true },
   password: String,
-  firstname:String,
-  lastname:String
+  firstname: String,
+  lastname: String,
 });
 export const UserModel = model("User", UserSchema);
 
@@ -40,3 +43,4 @@ const LinkSchema = new Schema({
   },
 });
 export const LinkModel = model("Links", LinkSchema);
+export default connectDB;

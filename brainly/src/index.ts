@@ -1,4 +1,7 @@
+import dotenv from "dotenv";
+dotenv.config();
 import mongoose from "mongoose";
+import connectDB from "./db";
 import jwt from "jsonwebtoken";
 import express = require("express");
 import { LinkModel, UserModel } from "./db";
@@ -11,6 +14,8 @@ import { JWT_PASSWORD } from "./config";
 import { userMiddleware } from "./middleware";
 import { random } from "./utils";
 
+connectDB();
+console.log("Database URL from the index.ts:", process.env.DATABASE_URL);
 app.post("/api/v1/signup", async (req, res) => {
   try {
     const username = req.body.username;
@@ -156,4 +161,6 @@ app.post("/api/v1/brain/:sharelink", async (req, res) => {
   });
 });
 
-app.listen(3000);
+app.listen(process.env.PORT || 3000, () => {
+  console.log(`Server running on port: ${process.env.PORT || 3000}`);
+});

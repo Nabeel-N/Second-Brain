@@ -12,10 +12,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const dotenv_1 = __importDefault(require("dotenv"));
+dotenv_1.default.config();
+const db_1 = __importDefault(require("./db"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const express = require("express");
-const db_1 = require("./db");
 const db_2 = require("./db");
+const db_3 = require("./db");
 const app = express();
 app.use(express.json());
 const cors_1 = __importDefault(require("cors"));
@@ -23,13 +26,15 @@ app.use((0, cors_1.default)());
 const config_1 = require("./config");
 const middleware_1 = require("./middleware");
 const utils_1 = require("./utils");
+(0, db_1.default)();
+console.log("Database URL from the index.ts:", process.env.DATABASE_URL);
 app.post("/api/v1/signup", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const username = req.body.username;
         const password = req.body.password;
         const firstname = req.body.firstname;
         const lastname = req.body.lastname;
-        const signup = yield db_1.UserModel.create({
+        const signup = yield db_2.UserModel.create({
             username: username,
             password: password,
             firstname: firstname,
@@ -48,7 +53,7 @@ app.post("/api/v1/signup", (req, res) => __awaiter(void 0, void 0, void 0, funct
 app.post("/api/v1/signin", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const username = req.body.username;
     const password = req.body.password;
-    const existingUser = yield db_1.UserModel.findOne({
+    const existingUser = yield db_2.UserModel.findOne({
         username: username,
         password: password,
     });
@@ -71,7 +76,7 @@ app.post("/api/v1/content", middleware_1.userMiddleware, (req, res) => __awaiter
     const title = req.body.title;
     const link = req.body.link;
     const userId = req.userId;
-    const content = yield db_2.ContentModel.create({
+    const content = yield db_3.ContentModel.create({
         title: title,
         link: link,
         type: req.body.type,
@@ -85,7 +90,7 @@ app.post("/api/v1/content", middleware_1.userMiddleware, (req, res) => __awaiter
 }));
 app.get("/api/v1/content", middleware_1.userMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const userId = req.userId;
-    const content = yield db_2.ContentModel.find({
+    const content = yield db_3.ContentModel.find({
         userId: userId,
     }).populate("userId", "username");
     res.json({
@@ -95,7 +100,7 @@ app.get("/api/v1/content", middleware_1.userMiddleware, (req, res) => __awaiter(
 app.delete("/api/v1/content", middleware_1.userMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const userId = req.userId;
     const contentId = req.body.contentId;
-    const deleteContent = yield db_2.ContentModel.deleteMany({
+    const deleteContent = yield db_3.ContentModel.deleteMany({
         userId,
         _id: contentId,
     });
@@ -108,10 +113,10 @@ app.post("/api/v1/brain/share", middleware_1.userMiddleware, (req, res) => __awa
     try {
         const share = req.body.share;
         const userId = req.userId;
-        yield db_1.LinkModel.deleteMany({ userId: userId });
+        yield db_2.LinkModel.deleteMany({ userId: userId });
         if (share) {
             const hash = (0, utils_1.random)(10);
-            yield db_1.LinkModel.create({
+            yield db_2.LinkModel.create({
                 userId,
                 hash,
             });
@@ -121,7 +126,7 @@ app.post("/api/v1/brain/share", middleware_1.userMiddleware, (req, res) => __awa
             });
         }
         else {
-            yield db_1.LinkModel.deleteOne({
+            yield db_2.LinkModel.deleteOne({
                 userId: userId,
             });
             res.json({
@@ -138,7 +143,7 @@ app.post("/api/v1/brain/share", middleware_1.userMiddleware, (req, res) => __awa
 }));
 app.post("/api/v1/brain/:sharelink", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const hash = req.params.sharelink;
-    const findLink = yield db_1.LinkModel.findOne({
+    const findLink = yield db_2.LinkModel.findOne({
         hash: hash,
     });
     if (!findLink) {
@@ -147,10 +152,10 @@ app.post("/api/v1/brain/:sharelink", (req, res) => __awaiter(void 0, void 0, voi
         });
         return;
     }
-    const content = yield db_2.ContentModel.findOne({
+    const content = yield db_3.ContentModel.findOne({
         userId: findLink.userId,
     });
-    const user = yield db_1.UserModel.findOne({
+    const user = yield db_2.UserModel.findOne({
         _id: findLink.userId,
     });
     res.json({
@@ -158,4 +163,6 @@ app.post("/api/v1/brain/:sharelink", (req, res) => __awaiter(void 0, void 0, voi
         content: content,
     });
 }));
-app.listen(3000);
+app.listen(process.env.PORT || 3000, () => {
+    console.log(`Server running on port: ${process.env.PORT || 3000}`);
+});
