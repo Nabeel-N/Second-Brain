@@ -25,15 +25,15 @@ interface Content {
 export function Dashboard() {
   const [modalOpen, setModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedType, setSelectedType] = useState<ContentType | null>(null); // Track selected content type
+  const [selectedType, setSelectedType] = useState<ContentType | null>(null);
   const { contents, refresh } = useContent();
   const [filteredContents, setFilteredContents] = useState<Content[]>(contents);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Update filtered contents whenever `contents`, `searchQuery`, or `selectedType` changes
   useEffect(() => {
     setFilteredContents(
       (contents as Content[]).filter((content) => {
-        // Filter by search query
         const queryWords = searchQuery
           .toLowerCase()
           .trim()
@@ -44,10 +44,7 @@ export function Dashboard() {
             content.title.toLowerCase().includes(word) ||
             content.link.toLowerCase().includes(word)
         );
-
-        // Filter by selected type
         const matchesType = selectedType ? content.type === selectedType : true;
-
         return matchesSearch && matchesType;
       })
     );
@@ -76,70 +73,115 @@ export function Dashboard() {
   };
 
   // Handle search input changes
-  const handlechange = (value: string) => {
+  const handleChange = (value: string) => {
     setSearchQuery(value.trim());
   };
 
-  // Handle sidebar item clicks
+  // Handle sidebar item clicks (also closes the mobile sidebar)
   const handleSidebarItemClick = (type: ContentType | null) => {
-    setSelectedType(type); // Set the selected type (or null to show all)
+    setSelectedType(type);
+    setSidebarOpen(false);
   };
 
   return (
-    <div className="flex flex-col md:flex-row bg-gradient-to-br from-gray-100 via-gray-200 to-gray-300 min-h-screen">
-      {/* Sidebar */}
-      <Sidebar
-        className="w-full md:w-72 bg-white shadow-lg"
-        onTwitterClick={() => handleSidebarItemClick(ContentType.Twitter)}
-        onYoutubeClick={() => handleSidebarItemClick(ContentType.Youtube)}
-        onClearFilter={() => handleSidebarItemClick(null)} // Clear filter
-      />
+    <div className="flex flex-col md:flex-row bg-gradient-to-br from-gray-100 via-gray-200 to-gray-300 min-h-screen relative">
+      {/* Mobile Header with toggle button */}
+      <div className="md:hidden flex items-center justify-between bg-white p-4 shadow-md">
+        <div className="text-xl font-semibold">Dashboard</div>
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="p-2 rounded-md bg-gray-200"
+          aria-label="Open sidebar"
+        >
+          {/* Hamburger Icon */}
+          <svg
+            className="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M4 6h16M4 12h16M4 18h16"
+            ></path>
+          </svg>
+        </button>
+      </div>
+
+      {/* Sidebar for Desktop */}
+      <div className="hidden md:block">
+        <Sidebar
+          onTwitterClick={() => handleSidebarItemClick(ContentType.Twitter)}
+          onYoutubeClick={() => handleSidebarItemClick(ContentType.Youtube)}
+          onClearFilter={() => handleSidebarItemClick(null)}
+        />
+      </div>
+
+      {/* Sidebar for Mobile (toggle overlay) */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 z-50 md:hidden">
+          <div
+            className="absolute inset-0 bg-black opacity-50"
+            onClick={() => setSidebarOpen(false)}
+          ></div>
+          <Sidebar
+            isMobile
+            onClose={() => setSidebarOpen(false)}
+            onTwitterClick={() => handleSidebarItemClick(ContentType.Twitter)}
+            onYoutubeClick={() => handleSidebarItemClick(ContentType.Youtube)}
+            onClearFilter={() => handleSidebarItemClick(null)}
+          />
+        </div>
+      )}
 
       {/* Main Content Area */}
-      <div className="p-6 md:ml-72 min-h-screen bg-white rounded-t-3xl md:rounded-t-none md:rounded-l-3xl shadow-lg">
+      <div className="flex-1 p-6 md:ml-72 min-h-screen bg-white rounded-t-3xl md:rounded-t-none md:rounded-l-3xl shadow-lg transition-all duration-300">
         {/* Modal */}
         <CreateContentModal
           open={modalOpen}
-          onClose={() => {
-            setModalOpen(false);
-          }}
+          onClose={() => setModalOpen(false)}
         />
 
         {/* Header Section */}
         <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
           {/* Search Bar */}
-          <SearchBar onChange={handlechange} value={searchQuery} />
+          <SearchBar onChange={handleChange} value={searchQuery} />
 
           {/* Buttons Container */}
-          <div className="flex flex-col md:flex-row gap-4 justify-center items-center mb-5">
+          <div className="flex flex-col md:flex-row gap-4 justify-center items-center">
             {/* Add Content Button */}
             <Button
-              className="bg-gradient-to-r from-violet-500 to-indigo-600 text-white text-center font-semibold py-3 px-3 rounded-xl shadow-md hover:from-violet-600 hover:to-indigo-700 transition-all duration-200"
-              onClick={() => {
-                setModalOpen(true);
-              }}
+              className="bg-gradient-to-r from-violet-500 to-indigo-600 text-white text-sm font-semibold py-2 px-4 rounded-lg shadow-md hover:from-violet-600 hover:to-indigo-700 transition-all duration-200"
+              onClick={() => setModalOpen(true)}
               variant="primary"
               text="Add Content"
               startIcon={<PlusIcon />}
             />
+
             {/* Share Brain Button */}
             <Button
-              className="bg-emerald-600 py-3 px-3 text-center text-white font-semibold rounded-xl shadow-md hover:bg-emerald-800 transition-all duration-200"
+              className="bg-gradient-to-r from-emerald-500 to-green-600 text-white text-sm font-semibold py-2 px-4 rounded-lg shadow-md hover:from-green-600 hover:to-emerald-700 transition-all duration-200"
               onClick={async () => {
-                const response = await axios.post(
-                  `${BACKEND_URL}/api/v1/brain/share`,
-                  {
-                    share: true,
-                  },
-                  {
-                    headers: {
-                      Authorization: localStorage.getItem("token"),
-                    },
-                  }
-                );
-                const shareUrl = `http://localhost:5173/share/${response.data.hash}`;
-                await navigator.clipboard.writeText(shareUrl);
-                alert("Share URL copied to clipboard");
+                try {
+                  const response = await axios.post(
+                    `${BACKEND_URL}/api/v1/brain/share`,
+                    { share: true },
+                    {
+                      headers: {
+                        Authorization: localStorage.getItem("token"),
+                      },
+                    }
+                  );
+                  const shareUrl = `http://localhost:5173/share/${response.data.hash}`;
+                  await navigator.clipboard.writeText(shareUrl);
+                  alert("Share URL copied to clipboard");
+                } catch (error) {
+                  console.error("Error sharing brain:", error);
+                  alert("Failed to share. Please try again.");
+                }
               }}
               variant="secondary"
               text="Share Brain"
